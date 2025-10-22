@@ -1,4 +1,4 @@
-# 🐾 Dự án nhóm 11 – Lớp DH22TIN05  
+# 🐾 Dự án nhóm 19 – Lớp DH22TIN05  
 **Công nghệ sử dụng:** Node.js + React + MongoDB + GitHub  
 
 ---
