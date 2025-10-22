@@ -17,7 +17,7 @@
 
 ---
 
-### 💻 2. Nguyễn Đông Khôi (Frontend Developer)
+### 💻 2. Trần Huỳnh Đăng Khôi (Frontend Developer)
 **Vai trò:** Thiết kế và xây dựng giao diện ReactJS  
 **Công việc phụ trách:**
 - Cài đặt môi trường React (`npx create-react-app`).  
@@ -55,5 +55,5 @@
 📌 *Nhóm 11 – Lớp DH22TIN05*  
 **Thành viên:**  
 - Trần Ngọc Vinh  
-- Nguyễn Đông Khôi  
+- Trần Huỳnh Đăng Khôi  
 - Phạm Huỳnh Bảo Toàn
