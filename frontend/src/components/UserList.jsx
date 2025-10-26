@@ -3,7 +3,7 @@ import axios from "axios";
 import AddUser from "./AddUser";
 
 // Use an environment variable for the API base URL so we don't hardcode the frontend port.
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 export default function UserList() {
     const [users, setUsers] = useState([]);
@@ -53,6 +53,24 @@ export default function UserList() {
 
     return (
         <div>
+            <h2>Quản lý User (CRUD)</h2>
+            
+            {/* Component thêm user, khi thêm thành công thì gọi lại fetchUsers */}
+            <AddUser onAdd={fetchUsers} /> 
+
+            {/* Nếu có user đang được chỉnh sửa, hiển thị khung tạm (placeholder) */}
+            {editingUser && (
+                <div style={{ border: '1px solid #ccc', padding: '8px', marginTop: '8px' }}>
+                    <h3>Đang sửa user</h3>
+                    <p>{editingUser.name} - {editingUser.email}</p>
+                    <button onClick={() => setEditingUser(null)}>Đóng</button>
+                </div>
+            )}
+
+            {/* Bạn có thể đặt form sửa user ở đây, truyền editingUser và hàm đóng form */}
+            {/* {editingUser && <EditUser user={editingUser} onUpdate={fetchUsers} onClose={() => setEditingUser(null)} />} */}
+
+            <hr />
 
             <h3>Danh sách User</h3>
             {users.length === 0 ? (

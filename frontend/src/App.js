@@ -9,7 +9,12 @@ function App() {
     setReload(!reload);
   };
 
-  return ;
+  return (
+    <div>
+      <h1>Quản lý User</h1>
+      <UserList />
+    </div>
+  );
 }
 
 export default App;
