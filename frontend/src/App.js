@@ -9,13 +9,7 @@ function App() {
     setReload(!reload);
   };
 
-  return (
-    <div style={{ padding: "20px" }}>
-      <h1>Quản lý User</h1>
-      <AddUser onAdd={handleAdd} />
-      <UserList key={reload} />
-    </div>
-  );
+  return ;
 }
 
 export default App;
