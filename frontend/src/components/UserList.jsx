@@ -30,11 +30,8 @@ export default function UserList() {
         }
 
         try {
-
-            await axios.delete(`${API_BASE}/users/${id}`);
-            
-
-            setUsers(users.filter((user) => user._id !== id));
+            await axios.delete(`http://localhost:3000/users/${id}`);
+            setUsers(users.filter(user => user.id !== id));
             console.log(`User ${id} đã được xóa.`);
         } catch (error) {
             console.error("Lỗi khi xóa user:", error);
@@ -77,8 +74,13 @@ export default function UserList() {
             ) : (
                 <ul>
                     {users.map((u) => (
+<<<<<<< HEAD
                         <li key={u._id} style={{ marginBottom: '10px', padding: '5px' }}>
                             <span style={{ fontWeight: 'bold' }}>{u.name}</span> - {u.email}
+=======
+                        <li key={u.id}>
+                            {u.name} - {u.email}
+>>>>>>> 0acabda1e13e0605d154acff126bd445bee06537
                             
                             {/* Nút Sửa */}
                             <button 
@@ -97,6 +99,7 @@ export default function UserList() {
                             
                             {/* Nút Xóa */}
                             <button 
+<<<<<<< HEAD
                                 onClick={() => handleDelete(u._id)} 
                                 style={{ 
                                     marginLeft: '10px', 
@@ -107,6 +110,10 @@ export default function UserList() {
                                     borderRadius: '3px',
                                     cursor: 'pointer'
                                 }}>
+=======
+                                onClick={() => handleDelete(u.id)} 
+                                style={{ marginLeft: '10px', color: 'red' }}>
+>>>>>>> 0acabda1e13e0605d154acff126bd445bee06537
                                 Xóa
                             </button>
                         </li>

@@ -14,7 +14,11 @@ export default function EditUser({ user, onUpdate, onClose }) {
 
     try {
       // Gửi PUT request đến backend để cập nhật
+<<<<<<< HEAD
       await axios.put(`${API_BASE}/users/${user._id}`, updatedUser);
+=======
+      await axios.put(`${API_BASE}/users/${user.id}`, updatedUser);
+>>>>>>> 0acabda1e13e0605d154acff126bd445bee06537
       
       // Gọi hàm onUpdate để refresh danh sách
       if (typeof onUpdate === 'function') onUpdate();
@@ -22,7 +26,11 @@ export default function EditUser({ user, onUpdate, onClose }) {
       // Đóng form edit
       if (typeof onClose === 'function') onClose();
       
+<<<<<<< HEAD
       console.log(`User ${user._id} đã được cập nhật.`);
+=======
+      console.log(`User ${user.id} đã được cập nhật.`);
+>>>>>>> 0acabda1e13e0605d154acff126bd445bee06537
     } catch (error) {
       console.error("Lỗi khi cập nhật user:", error?.response?.status, error?.message || error);
     }
