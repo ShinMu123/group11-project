@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import AddUser from "./AddUser";
+import EditUser from "./EditUser";
 
 // Use an environment variable for the API base URL so we don't hardcode the frontend port.
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
@@ -14,6 +15,7 @@ export default function UserList() {
     const fetchUsers = async () => {
         try {
             const res = await axios.get(`${API_BASE}/users`);
+            console.log("Fetched users:", res.data);
             setUsers(res.data);
         } catch (error) {
             console.error("Lỗi khi tải danh sách user:", error?.response?.status, error?.message || error);
@@ -53,6 +55,21 @@ export default function UserList() {
 
     return (
         <div>
+            <h2>Quản lý User (CRUD)</h2>
+            
+            {/* Component thêm user, khi thêm thành công thì gọi lại fetchUsers */}
+            <AddUser onAdd={fetchUsers} /> 
+
+            {/* Form sửa user */}
+            {editingUser && (
+                <EditUser 
+                    user={editingUser} 
+                    onUpdate={fetchUsers} 
+                    onClose={() => setEditingUser(null)} 
+                />
+            )}
+
+            <hr />
 
             <h3>Danh sách User</h3>
             {users.length === 0 ? (
@@ -60,20 +77,36 @@ export default function UserList() {
             ) : (
                 <ul>
                     {users.map((u) => (
-                        <li key={u._id}>
-                            {u.name} - {u.email}
+                        <li key={u._id} style={{ marginBottom: '10px', padding: '5px' }}>
+                            <span style={{ fontWeight: 'bold' }}>{u.name}</span> - {u.email}
                             
-                            {/* Nút Sửa, gọi handleEdit */}
+                            {/* Nút Sửa */}
                             <button 
                                 onClick={() => handleEdit(u)} 
-                                style={{ marginLeft: '10px' }}>
+                                style={{ 
+                                    marginLeft: '15px', 
+                                    padding: '5px 10px',
+                                    backgroundColor: '#007bff',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '3px',
+                                    cursor: 'pointer'
+                                }}>
                                 Sửa
                             </button>
                             
-                            {/* Nút Xóa, gọi handleDelete và truyền ID của user */}
+                            {/* Nút Xóa */}
                             <button 
                                 onClick={() => handleDelete(u._id)} 
-                                style={{ marginLeft: '10px', color: 'red' }}>
+                                style={{ 
+                                    marginLeft: '10px', 
+                                    padding: '5px 10px',
+                                    backgroundColor: '#dc3545',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '3px',
+                                    cursor: 'pointer'
+                                }}>
                                 Xóa
                             </button>
                         </li>
