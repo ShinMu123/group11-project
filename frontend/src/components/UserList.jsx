@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import AddUser from "./AddUser";
+import EditUser from "./EditUser";
 
 // Use an environment variable for the API base URL so we don't hardcode the frontend port.
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
@@ -28,11 +29,8 @@ export default function UserList() {
         }
 
         try {
-
-            await axios.delete(`${API_BASE}/users/${id}`);
-            
-
-            setUsers(users.filter((user) => user._id !== id));
+            await axios.delete(`http://localhost:3000/users/${id}`);
+            setUsers(users.filter(user => user.id !== id));
             console.log(`User ${id} đã được xóa.`);
         } catch (error) {
             console.error("Lỗi khi xóa user:", error);
@@ -53,6 +51,21 @@ export default function UserList() {
 
     return (
         <div>
+            <h2>Quản lý User (CRUD)</h2>
+            
+            {/* Component thêm user, khi thêm thành công thì gọi lại fetchUsers */}
+            <AddUser onAdd={fetchUsers} /> 
+
+            {/* Form sửa user */}
+            {editingUser && (
+                <EditUser 
+                    user={editingUser} 
+                    onUpdate={fetchUsers} 
+                    onClose={() => setEditingUser(null)} 
+                />
+            )}
+
+            <hr />
 
             <h3>Danh sách User</h3>
             {users.length === 0 ? (
@@ -60,7 +73,7 @@ export default function UserList() {
             ) : (
                 <ul>
                     {users.map((u) => (
-                        <li key={u._id}>
+                        <li key={u.id}>
                             {u.name} - {u.email}
                             
                             {/* Nút Sửa, gọi handleEdit */}
@@ -72,7 +85,7 @@ export default function UserList() {
                             
                             {/* Nút Xóa, gọi handleDelete và truyền ID của user */}
                             <button 
-                                onClick={() => handleDelete(u._id)} 
+                                onClick={() => handleDelete(u.id)} 
                                 style={{ marginLeft: '10px', color: 'red' }}>
                                 Xóa
                             </button>
