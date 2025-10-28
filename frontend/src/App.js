@@ -1,52 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import UserList from "./components/UserList";
+import AddUser from "./components/AddUser";
+
+// Use an environment variable for the API base URL
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 function App() {
   const [users, setUsers] = useState([]);
-  const [form, setForm] = useState({ name: '', email: '' });
 
-  // 🟢 Lấy danh sách user từ backend
-  useEffect(() => {
-    axios.get('http://localhost:3000/users')
-      .then(res => setUsers(res.data))
-      .catch(err => console.error('Lỗi khi tải users:', err));
-  }, []);
-
-  // 🟢 Xử lý thêm user mới
-  const addUser = async (e) => {
-    e.preventDefault();
+  // Fetch users from backend
+  const fetchUsers = async () => {
     try {
-      const res = await axios.post('http://localhost:3000/users', form);
-      setUsers([...users, res.data]);
-      setForm({ name: '', email: '' });
-    } catch (err) {
-      console.error('Lỗi khi thêm user:', err);
+      const res = await axios.get(`${API_BASE}/users`);
+      console.log("Fetched users:", res.data);
+      setUsers(res.data);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách user:", error?.response?.status, error?.message || error);
     }
   };
 
+  // Load users when component mounts
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
   return (
     <div style={{ padding: '20px' }}>
-      <h1>Danh sách người dùng (MongoDB)</h1>
-
-      <form onSubmit={addUser} style={{ marginBottom: '20px' }}>
-        <input
-          placeholder="Tên"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
-        <input
-          placeholder="Email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-        />
-        <button type="submit">Thêm User</button>
-      </form>
-
-      <ul>
-        {users.map((u) => (
-          <li key={u._id}>{u.name} - {u.email}</li>
-        ))}
-      </ul>
+      <h1>Quản lý User (CRUD)</h1>
+      <AddUser onAdd={fetchUsers} />
+      <UserList users={users} onUpdate={fetchUsers} />
     </div>
   );
 }
