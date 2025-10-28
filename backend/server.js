@@ -51,27 +51,9 @@ app.get('/users', async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// � API PUT: cập nhật người dùng
-app.put('/users/:id', async (req, res) => {
-try {
-const { id } = req.params;
-const { name, email } = req.body;
-const updatedUser = await User.findByIdAndUpdate(id, { name, email }, { new: true });
-if (!updatedUser) {
-return res.status(404).json({ message: 'User not found' });
-}
-res.json(updatedUser);
-} catch (error) {
-res.status(500).json({ message: error.message });
-}
-});
-=======
 // 🚀 Khởi động server
 const PORT = 3000;
 app.listen(PORT, () => console.log(`🚀 Server chạy tại: http://localhost:${PORT}`));
-app.listen(PORT, () => console.log(`Server chạy tại http://localhost:${PORT}`));
->>>>>>> 0acabda1e13e0605d154acff126bd445bee06537
 
 // 🗑️ API DELETE: xóa người dùng
 app.delete('/users/:id', async (req, res) => {
@@ -87,6 +69,34 @@ res.status(500).json({ message: error.message });
 }
 });
 
-// �🚀 Khởi động server
-const PORT = 3000;
-app.listen(PORT, () => console.log(`Server chạy tại http://localhost:${PORT}`))
+// ✏️ API PUT: cập nhật người dùng
+app.put('/users/:id', async (req, res) => {
+    try {
+        console.log('📩 Dữ liệu cập nhật:', req.body);
+        const { id } = req.params;
+        const { name, email } = req.body;
+
+        // Kiểm tra nếu thiếu name hoặc email
+        if (!name || !email) {
+            return res.status(400).json({ message: 'Thiếu thông tin name hoặc email!' });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            id, 
+            { name, email }, 
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({
+            message: '✅ Cập nhật người dùng thành công!',
+            user: updatedUser
+        });
+    } catch (error) {
+        console.error('❌ Lỗi cập nhật user:', error);
+        res.status(500).json({ message: error.message });
+    }
+});

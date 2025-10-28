@@ -11,6 +11,18 @@ export default function AddUser({ onAdd }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Validation: Check if name is not empty
+        if (!name.trim()) {
+            alert("Name không được để trống");
+            return;
+        }
+
+        // Validation: Check if email has valid format
+        if (!/\S+@\S+\.\S+/.test(email)) {
+            alert("Email không hợp lệ");
+            return;
+        }
+
         const newUser = { name, email };
 
         try {
@@ -23,8 +35,11 @@ export default function AddUser({ onAdd }) {
             // Clear form
             setName("");
             setEmail("");
+
+            alert("User đã được thêm thành công!");
         } catch (error) {
             console.error("Lỗi khi thêm user:", error?.response?.status, error?.message || error);
+            alert("Có lỗi xảy ra khi thêm user. Vui lòng thử lại.");
         }
     };
 
