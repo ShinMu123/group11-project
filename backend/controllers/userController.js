@@ -3,7 +3,7 @@ const User = require('../models/User');
 // 📥 POST: Thêm user mới
 exports.createUser = async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, password } = req.body;
 
     // Kiểm tra trùng email
     const existingUser = await User.findOne({ email });
@@ -11,7 +11,15 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ message: 'Email đã tồn tại!' });
     }
 
-    const newUser = new User({ name, email });
+    // Hash mật khẩu
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({ 
+      name, 
+      email, 
+      password: hashedPassword 
+    });
     await newUser.save();
     res.status(201).json(newUser);
   } catch (error) {

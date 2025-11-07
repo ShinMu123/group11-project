@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { BrowserRouter as Router, Route, Routes, Link, Navigate } from "react-router-dom";
+import axiosInstance from "./utils/axios";
 import UserList from "./components/UserList";
 import AddUser from "./components/AddUser";
-
-// Use an environment variable for the API base URL
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+import Profile from "./components/Profile";
+import Login from "./components/Login";
+import Register from "./components/Register";
 
 function App() {
   const [users, setUsers] = useState([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Fetch users from backend
   const fetchUsers = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/users`);
+      const res = await axiosInstance.get('/users');
       console.log("Fetched users:", res.data);
       setUsers(res.data);
     } catch (error) {
@@ -20,17 +22,80 @@ function App() {
     }
   };
 
+  // Check authentication status
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    setIsAuthenticated(!!token);
+  }, []);
+
   // Load users when component mounts
   useEffect(() => {
     fetchUsers();
   }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    window.location.reload();
+  };
+
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Quản lý User (CRUD)</h1>
-      <AddUser onAdd={fetchUsers} />
-      <UserList users={users} onUpdate={fetchUsers} />
-    </div>
+    <Router>
+      <div>
+        <nav className="navbar navbar-expand-lg navbar-light bg-light">
+          <div className="container">
+            <Link className="navbar-brand" to="/">User Management</Link>
+            <div className="navbar-nav me-auto">
+              <Link className="nav-link" to="/">Home</Link>
+              {isAuthenticated && (
+                <Link className="nav-link" to="/profile">Profile</Link>
+              )}
+            </div>
+            <div className="navbar-nav">
+              {!isAuthenticated ? (
+                <>
+                  <Link className="nav-link" to="/login">Đăng nhập</Link>
+                  <Link className="nav-link" to="/register">Đăng ký</Link>
+                </>
+              ) : (
+                <button 
+                  className="btn btn-outline-danger" 
+                  onClick={handleLogout}
+                >
+                  Đăng xuất
+                </button>
+              )}
+            </div>
+          </div>
+        </nav>
+        
+        <div style={{ padding: '20px' }}>
+          <Routes>
+            <Route path="/" element={
+              isAuthenticated ? (
+                <>
+                  <h1>Quản lý User (CRUD)</h1>
+                  <AddUser onAdd={fetchUsers} />
+                  <UserList users={users} onUpdate={fetchUsers} />
+                </>
+              ) : (
+                <Navigate to="/login" />
+              )
+            } />
+            <Route path="/profile" element={
+              isAuthenticated ? <Profile /> : <Navigate to="/login" />
+            } />
+            <Route path="/login" element={
+              !isAuthenticated ? <Login /> : <Navigate to="/" />
+            } />
+            <Route path="/register" element={
+              !isAuthenticated ? <Register /> : <Navigate to="/" />
+            } />
+          </Routes>
+        </div>
+      </div>
+    </Router>
   );
 }
 
