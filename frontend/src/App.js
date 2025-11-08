@@ -6,6 +6,8 @@ import AddUser from "./components/AddUser";
 import Profile from "./components/Profile";
 import Login from "./components/Login";
 import Register from "./components/Register";
+import ForgotPassword from "./components/ForgotPassword";
+import ResetPassword from "./components/ResetPassword";
 
 function App() {
   const [users, setUsers] = useState([]);
@@ -27,6 +29,11 @@ function App() {
     const token = localStorage.getItem('token');
     setIsAuthenticated(!!token);
   }, []);
+
+  const currentUser = (() => {
+    try { return JSON.parse(localStorage.getItem('user')); } catch (e) { return null; }
+  })();
+  const isAdmin = !!(currentUser && currentUser.role === 'admin');
 
   // Load users when component mounts
   useEffect(() => {
@@ -50,6 +57,9 @@ function App() {
               <Link className="nav-link" to="/">Home</Link>
               {isAuthenticated && (
                 <Link className="nav-link" to="/profile">Profile</Link>
+              )}
+              {isAuthenticated && isAdmin && (
+                <Link className="nav-link" to="/admin">Admin</Link>
               )}
             </div>
             <div className="navbar-nav">
@@ -83,6 +93,20 @@ function App() {
                 <Navigate to="/login" />
               )
             } />
+            {/* Admin-only user list */}
+            <Route path="/admin" element={
+              isAuthenticated && isAdmin ? (
+                <>
+                  <h1>Admin - Danh sách user</h1>
+                  <UserList users={users} onUpdate={fetchUsers} />
+                </>
+              ) : (
+                <Navigate to="/" />
+              )
+            } />
+            {/* Forgot / Reset password */}
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={
               isAuthenticated ? <Profile /> : <Navigate to="/login" />
             } />

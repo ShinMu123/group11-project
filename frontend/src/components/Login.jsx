@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axiosInstance from '../utils/axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -74,6 +74,11 @@ const Login = () => {
                   Đăng nhập
                 </button>
               </form>
+              <div className="text-center mt-3">
+                <Link to="/forgot-password" className="text-decoration-none">
+                  Quên mật khẩu?
+                </Link>
+              </div>
             </div>
           </div>
         </div>
