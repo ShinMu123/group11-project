@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+import axiosInstance from '../utils/axios';
 
 export default function EditUser({ user, onUpdate, onClose }) {
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
-  // Update state when user prop changes
   useEffect(() => {
     if (user) {
       setName(user.name || "");
@@ -17,87 +16,112 @@ export default function EditUser({ user, onUpdate, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage("");
 
-    // Check if user exists
     if (!user || !user._id) {
-      alert("Không tìm thấy thông tin user để cập nhật");
+      setMessage("❌ Không tìm thấy thông tin user để cập nhật");
       return;
     }
 
-    // Validation: Check if name is not empty
     if (!name.trim()) {
-      alert("Name không được để trống");
+      setMessage("❌ Tên không được để trống");
       return;
     }
 
-    // Validation: Check if email has valid format
     if (!/\S+@\S+\.\S+/.test(email)) {
-      alert("Email không hợp lệ");
+      setMessage("❌ Email không hợp lệ");
       return;
     }
 
-    const updatedUser = { name: name.trim(), email: email.trim() };
-
+    setLoading(true);
     try {
-      console.log('Đang cập nhật user:', user._id, 'với dữ liệu:', updatedUser);
-      
-      // Gửi PUT request đến backend để cập nhật
-      const response = await axios.put(`${API_BASE}/users/${user._id}`, updatedUser);
-      
-      console.log('Phản hồi từ server:', response.data);
+      const response = await axiosInstance.put(`/users/${user._id}`, {
+        name: name.trim(),
+        email: email.trim()
+      });
 
-      // Gọi hàm onUpdate để refresh danh sách
       if (typeof onUpdate === 'function') onUpdate();
-      
-      // Đóng form edit
       if (typeof onClose === 'function') onClose();
       
-      console.log(`User ${user._id} đã được cập nhật.`);
-      alert("User đã được cập nhật thành công!");
-
+      setMessage("✅ User đã được cập nhật thành công!");
     } catch (error) {
       console.error("Lỗi khi cập nhật user:", error);
-      console.error("Error response:", error?.response?.data);
-      console.error("Error status:", error?.response?.status);
-      
-      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi cập nhật user';
-      alert(errorMessage + ". Vui lòng thử lại.");
+      setMessage(error.response?.data?.message || "❌ Có lỗi xảy ra khi cập nhật user");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ border: '2px solid #007bff', padding: '15px', marginTop: '10px', backgroundColor: '#f8f9fa' }}>
-      <h3>Sửa User</h3>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Tên:</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            style={{ marginLeft: '10px', padding: '5px' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ marginLeft: '10px', padding: '5px' }}
-          />
-        </div>
-        <div>
-          <button type="submit" style={{ marginRight: '10px', backgroundColor: '#28a745', color: 'white', padding: '8px 15px', border: 'none' }}>
-            Cập nhật
-          </button>
-          <button type="button" onClick={onClose} style={{ backgroundColor: '#6c757d', color: 'white', padding: '8px 15px', border: 'none' }}>
-            Hủy
-          </button>
-        </div>
-      </form>
+    <div className="card shadow border-0" style={{ borderRadius: '15px', border: '2px solid #007bff' }}>
+      <div className="card-header bg-primary text-white" style={{ borderRadius: '13px 13px 0 0' }}>
+        <h5 className="mb-0">
+          <i className="bi bi-pencil-square me-2"></i>
+          Sửa User
+        </h5>
+      </div>
+      <div className="card-body">
+        {message && (
+          <div className={`alert ${message.startsWith('✅') ? 'alert-success' : 'alert-danger'} alert-dismissible fade show`} role="alert">
+            {message}
+            <button type="button" className="btn-close" onClick={() => setMessage('')}></button>
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <label className="form-label fw-bold">
+              <i className="bi bi-person me-2"></i>Tên
+            </label>
+            <input
+              type="text"
+              className="form-control form-control-lg"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="form-label fw-bold">
+              <i className="bi bi-envelope me-2"></i>Email
+            </label>
+            <input
+              type="email"
+              className="form-control form-control-lg"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="d-flex gap-2">
+            <button
+              type="submit"
+              className="btn btn-success btn-lg flex-fill"
+              disabled={loading}
+              style={{ borderRadius: '10px' }}
+            >
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                  Đang cập nhật...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-check-circle me-2"></i>Cập nhật
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-lg"
+              onClick={onClose}
+              style={{ borderRadius: '10px' }}
+            >
+              <i className="bi bi-x-circle me-2"></i>Hủy
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

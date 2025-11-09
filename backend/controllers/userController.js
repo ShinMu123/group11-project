@@ -59,15 +59,64 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// 🗑️ DELETE: Xóa user
+// 🗑️ DELETE: Xóa user (chỉ admin hoặc chính user đó)
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
+    const currentUser = req.user;
+
+    // Kiểm tra quyền: chỉ admin hoặc chính user đó mới được xóa
+    if (currentUser.role !== 'admin' && currentUser.id !== id) {
+      return res.status(403).json({ message: 'Không có quyền xóa user này!' });
+    }
+
     const deletedUser = await User.findByIdAndDelete(id);
     if (!deletedUser) {
       return res.status(404).json({ message: 'Không tìm thấy user!' });
     }
     res.json({ message: 'Đã xóa user thành công!' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 🔄 Reset password cho user (Admin only - dùng để fix lỗi password)
+exports.resetUserPassword = async (req, res) => {
+  try {
+    const { userId, newPassword } = req.body;
+    const bcrypt = require('bcryptjs');
+
+    // Kiểm tra quyền admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Chỉ admin mới có quyền reset password!' });
+    }
+
+    if (!userId || !newPassword) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp userId và newPassword' });
+    }
+
+    // Tìm user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy user!' });
+    }
+
+    // Hash password mới
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Cập nhật password
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({ 
+      success: true,
+      message: 'Password đã được reset thành công!',
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

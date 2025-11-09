@@ -1,26 +1,32 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axiosInstance from '../utils/axios';
 import EditUser from "./EditUser";
 
 export default function UserList({ users, onUpdate }) {
-    // State để lưu user đang được chỉnh sửa, giúp mở form Sửa
     const [editingUser, setEditingUser] = useState(null);
+    const [deletingId, setDeletingId] = useState(null);
 
-    // Hàm xử lý sự kiện Xóa user
+    // Debug: Log users prop
+    useEffect(() => {
+        console.log("UserList received users:", users);
+        console.log("Users count:", users?.length);
+        console.log("Users is array?", Array.isArray(users));
+    }, [users]);
+
     const handleDelete = async (id) => {
-        // Hỏi xác nhận trước khi xóa
         if (!window.confirm("Bạn có chắc chắn muốn xóa user này không?")) {
             return;
         }
 
+        setDeletingId(id);
         try {
             await axiosInstance.delete(`/users/${id}`);
-            console.log(`User ${id} đã được xóa.`);
-            // Call parent's onUpdate to refresh the users list
             if (typeof onUpdate === 'function') onUpdate();
         } catch (error) {
             console.error("Lỗi khi xóa user:", error);
-            alert("Có lỗi xảy ra khi xóa user. Vui lòng thử lại.");
+            alert(error.response?.data?.message || "Có lỗi xảy ra khi xóa user. Vui lòng thử lại.");
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -28,74 +34,143 @@ export default function UserList({ users, onUpdate }) {
         setEditingUser(user);
     };
 
+    const getCurrentUser = () => {
+        try {
+            return JSON.parse(localStorage.getItem('user'));
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const currentUser = getCurrentUser();
+    const canDelete = (user) => {
+        if (!currentUser) return false;
+        const isOwner = currentUser._id === user._id || currentUser.id === user._id || currentUser.id === user.id;
+        return currentUser.role === 'admin' || isOwner;
+    };
+
     return (
         <div>
-            {/* Form sửa user */}
             {editingUser && (
-                <EditUser 
-                    user={editingUser} 
-                    onUpdate={onUpdate} 
-                    onClose={() => setEditingUser(null)} 
-                />
+                <div className="mb-4">
+                    <EditUser 
+                        user={editingUser} 
+                        onUpdate={() => {
+                            if (typeof onUpdate === 'function') onUpdate();
+                            setEditingUser(null);
+                        }} 
+                        onClose={() => setEditingUser(null)} 
+                    />
+                </div>
             )}
 
-            <hr />
-
-            <h3>Danh sách User</h3>
-            {!users || users.length === 0 ? (
-                <p>Chưa có user nào.</p>
-            ) : (
-                <ul>
-                    {users.map((u) => (
-                        <li key={u._id} style={{ marginBottom: '10px', padding: '5px' }}>
-                            <span style={{ fontWeight: 'bold' }}>{u.name}</span> - {u.email}
-
-                            
-                            {/* Nút Sửa */}
-                            <button 
-                                onClick={() => handleEdit(u)} 
-                                style={{ 
-                                    marginLeft: '15px', 
-                                    padding: '5px 10px',
-                                    backgroundColor: '#007bff',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '3px',
-                                    cursor: 'pointer'
-                                }}>
-                                Sửa
-                            </button>
-                            
-                            {/* Nút Xóa: chỉ hiện nếu là Admin hoặc là chính user đó */}
-                            {(() => {
-                                try {
-                                    const currentUser = JSON.parse(localStorage.getItem('user'));
-                                    if (currentUser && (currentUser.role === 'admin' || currentUser._id === u._id)) {
-                                        return (
-                                            <button 
-                                                onClick={() => handleDelete(u._id)} 
-                                                style={{ 
-                                                    marginLeft: '10px', 
-                                                    padding: '5px 10px',
-                                                    backgroundColor: '#dc3545',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '3px',
-                                                    cursor: 'pointer'
-                                                }}>
-                                                Xóa
-                                            </button>
-                                        );
-                                    }
-                                } catch (e) {
-                                    // ignore parse errors
-                                }
-                                return null;
-                            })()}
-                        </li>
-                    ))}
-                </ul>
-            )}
+            <div className="card shadow border-0" style={{ borderRadius: '15px' }}>
+                <div className="card-header bg-white border-0 pb-0" style={{ borderRadius: '15px 15px 0 0' }}>
+                    <h4 className="mb-0" style={{ color: '#333', fontWeight: '600' }}>
+                        <i className="bi bi-people-fill me-2 text-primary"></i>
+                        Danh sách User ({users?.length || 0})
+                    </h4>
+                </div>
+                <div className="card-body">
+                    {!users || users.length === 0 ? (
+                        <div className="text-center py-5">
+                            <i className="bi bi-inbox" style={{ fontSize: '48px', color: '#ccc' }}></i>
+                            <p className="text-muted mt-3">Chưa có user nào.</p>
+                        </div>
+                    ) : (
+                        <div className="table-responsive">
+                            <table className="table table-hover align-middle">
+                                <thead>
+                                    <tr style={{ backgroundColor: '#f8f9fa' }}>
+                                        <th style={{ borderTop: 'none' }}>Avatar</th>
+                                        <th style={{ borderTop: 'none' }}>Tên</th>
+                                        <th style={{ borderTop: 'none' }}>Email</th>
+                                        <th style={{ borderTop: 'none' }}>Vai trò</th>
+                                        <th style={{ borderTop: 'none', textAlign: 'center' }}>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {users.map((u) => (
+                                        <tr key={u._id} style={{ transition: 'background-color 0.2s' }}>
+                                            <td>
+                                                {u.avatar ? (
+                                                    <img
+                                                        src={u.avatar}
+                                                        alt={u.name}
+                                                        style={{
+                                                            width: '40px',
+                                                            height: '40px',
+                                                            borderRadius: '50%',
+                                                            objectFit: 'cover'
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div
+                                                        style={{
+                                                            width: '40px',
+                                                            height: '40px',
+                                                            borderRadius: '50%',
+                                                            backgroundColor: '#e9ecef',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            color: '#6c757d'
+                                                        }}
+                                                    >
+                                                        <i className="bi bi-person"></i>
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <strong>{u.name}</strong>
+                                            </td>
+                                            <td>{u.email}</td>
+                                            <td>
+                                                <span
+                                                    className={`badge ${u.role === 'admin' ? 'bg-danger' : 'bg-secondary'}`}
+                                                    style={{ fontSize: '0.85rem' }}
+                                                >
+                                                    {u.role === 'admin' ? (
+                                                        <><i className="bi bi-shield-check me-1"></i>Admin</>
+                                                    ) : (
+                                                        <><i className="bi bi-person me-1"></i>User</>
+                                                    )}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="d-flex gap-2 justify-content-center">
+                                                    <button
+                                                        className="btn btn-sm btn-outline-primary"
+                                                        onClick={() => handleEdit(u)}
+                                                        style={{ borderRadius: '8px' }}
+                                                    >
+                                                        <i className="bi bi-pencil me-1"></i>Sửa
+                                                    </button>
+                                                    {canDelete(u) && (
+                                                        <button
+                                                            className="btn btn-sm btn-outline-danger"
+                                                            onClick={() => handleDelete(u._id)}
+                                                            disabled={deletingId === u._id}
+                                                            style={{ borderRadius: '8px' }}
+                                                        >
+                                                            {deletingId === u._id ? (
+                                                                <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                                                            ) : (
+                                                                <i className="bi bi-trash me-1"></i>
+                                                            )}
+                                                            Xóa
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

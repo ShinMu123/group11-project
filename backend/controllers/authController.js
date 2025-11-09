@@ -1,180 +1,217 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const User = require("../models/User");
+const sendEmail = require("../utils/sendEmail");
 
+// Helper: tạo JWT token
+const generateToken = (user) => {
+  return jwt.sign(
+    { id: user._id, email: user.email, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "24h" }
+  );
+};
+
+// ========================
 // Đăng ký tài khoản mới
+// ========================
 exports.signup = async (req, res) => {
-    try {
-        const { name, email, password } = req.body;
+  try {
+    const { name, email, password, role } = req.body;
 
-        // Kiểm tra dữ liệu đầu vào
-        if (!name || !email || !password) {
-            return res.status(400).json({ 
-                success: false,
-                message: "Vui lòng điền đầy đủ thông tin" 
-            });
-        }
-
-        // Kiểm tra email đã tồn tại
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ 
-                success: false,
-                message: "Email đã tồn tại" 
-            });
-        }
-
-        // Mã hóa mật khẩu
-        console.log('Password before hashing:', password);
-        const hashedPassword = await bcrypt.hash(password, 10);
-        console.log('Hashed password:', hashedPassword);
-
-        // Tạo user mới
-        const user = await User.create({
-            name,
-            email,
-            password: hashedPassword,
-            role: "user"
-        });
-        
-        console.log('Created user:', {
-            id: user._id,
-            hasPassword: !!user.password,
-            passwordLength: user.password?.length
-        });
-
-        // Verify the user was created with password
-        const savedUser = await User.findById(user._id).select('+password');
-        if (!savedUser || !savedUser.password) {
-            throw new Error('Lỗi khi lưu mật khẩu');
-        }
-
-        res.status(201).json({
-            success: true,
-            message: "Đăng ký thành công",
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role
-            }
-        });
-
-    } catch (error) {
-        console.error('Signup error:', error);
-        res.status(500).json({
-            success: false,
-            message: "Lỗi khi đăng ký",
-            error: error.message
-        });
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng điền đầy đủ thông tin",
+      });
     }
-};
 
-// Đăng nhập
-exports.login = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        // Kiểm tra dữ liệu đầu vào
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: "Vui lòng nhập email và mật khẩu"
-            });
-        }
-
-        // Tìm user theo email và lấy tất cả các trường
-        const user = await User.findOne({ email }).select('+password');
-        
-        console.log('Login attempt - User data:', {
-            id: user?._id,
-            email: user?.email,
-            hasPassword: !!user?.password,
-            passwordField: user?.password,
-            allFields: user ? Object.keys(user.toObject()) : []
-        });
-
-        // Kiểm tra user tồn tại
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: "Email không tồn tại"
-            });
-        }
-
-        // Kiểm tra mật khẩu
-        if (!user.password) {
-            console.error('No password stored for user');
-            return res.status(401).json({
-                success: false,
-                message: "Tài khoản chưa được thiết lập mật khẩu"
-            });
-        }
-
-        console.log('Password comparison:', {
-            inputPasswordLength: password?.length,
-            storedPasswordLength: user.password?.length,
-            storedPasswordType: typeof user.password
-        });
-
-        // Kiểm tra JWT_SECRET
-        if (!process.env.JWT_SECRET) {
-            console.error('JWT_SECRET is not defined');
-            return res.status(500).json({
-                success: false,
-                message: "Lỗi cấu hình server"
-            });
-        }
-
-        // So sánh password
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        console.log('Password validation result:', isPasswordValid);
-    
-        if (!isPasswordValid) {
-            return res.status(401).json({
-                success: false,
-                message: "Mật khẩu không đúng"
-            });
-        }
-
-        // Tạo JWT token
-            const token = jwt.sign(
-                {
-                    id: user._id,
-                    email: user.email,
-                    role: user.role
-                },
-                process.env.JWT_SECRET,
-                { expiresIn: '24h' }
-            );
-
-        // Trả về thông tin đăng nhập thành công
-        res.json({
-            success: true,
-            message: "Đăng nhập thành công",
-            token,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role
-            }
-        });
-
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({
-            success: false,
-            message: "Lỗi khi đăng nhập",
-            error: error.message
-        });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Email đã tồn tại",
+      });
     }
-};
 
-// Đăng xuất
-exports.logout = (req, res) => {
-    res.json({
-        success: true,
-        message: "Đăng xuất thành công"
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: role || "user",
     });
+
+    const token = generateToken(user);
+
+    res.status(201).json({
+      success: true,
+      message: "Đăng ký thành công",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar || "",
+      },
+    });
+  } catch (error) {
+    console.error("Signup error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi đăng ký",
+      error: error.message,
+    });
+  }
+};
+
+// ========================
+// Đăng nhập
+// ========================
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập email và mật khẩu",
+      });
+    }
+
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Email không tồn tại",
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Mật khẩu không đúng",
+      });
+    }
+
+    const token = generateToken(user);
+
+    res.json({
+      success: true,
+      message: "Đăng nhập thành công",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar || "",
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi đăng nhập",
+      error: error.message,
+    });
+  }
+};
+
+// ========================
+// Đăng xuất
+// ========================
+exports.logout = (req, res) => {
+  res.json({
+    success: true,
+    message: "Đăng xuất thành công",
+  });
+};
+
+// ========================
+// Quên mật khẩu (Forgot Password)
+// ========================
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Vui lòng nhập email" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Email không tồn tại" });
+    }
+
+    // Tạo token reset
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 phút
+    await user.save();
+
+    const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+    const message = `Bạn nhận được email này vì đã yêu cầu đặt lại mật khẩu.\n\nNhấn vào liên kết sau để đặt lại mật khẩu:\n${resetUrl}\n\nNếu bạn không yêu cầu, hãy bỏ qua email này.`;
+
+    await sendEmail(user.email, "Đặt lại mật khẩu", message);
+
+    res.json({
+      success: true,
+      message: "Email đặt lại mật khẩu đã được gửi!",
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi gửi email đặt lại mật khẩu",
+      error: error.message,
+    });
+  }
+};
+
+// ========================
+// Đặt lại mật khẩu bằng token
+// ========================
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ success: false, message: "Vui lòng nhập mật khẩu mới" });
+    }
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpire: { $gt: Date.now() },
+    }).select("+password");
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Token không hợp lệ hoặc đã hết hạn",
+      });
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Đặt lại mật khẩu thành công!",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi đặt lại mật khẩu",
+      error: error.message,
+    });
+  }
 };
