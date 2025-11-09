@@ -24,7 +24,7 @@
 - Tạo các component giao diện (Home, UserList, AddUser...).  
 - Kết nối API từ backend bằng Axios.  
 - Hiển thị dữ liệu từ MongoDB lên giao diện.  
-- Push code frontend lên nhánh `frontend`.
+- Push code frontend lên nhánh `frontend.`.
 
 ---
 
